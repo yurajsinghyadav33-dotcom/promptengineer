@@ -131,3 +131,33 @@ export interface PresetScenario {
   imageCaption?: string;
   docName?: string;
 }
+
+export interface SpeechRecognitionResultItem {
+  transcript: string;
+  confidence: number;
+}
+
+export interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResultItem[];
+  [index: number]: {
+    [index: number]: SpeechRecognitionResultItem;
+  };
+}
+
+export interface SpeechRecognitionEventLike {
+  results: SpeechRecognitionResultList;
+}
+
+export interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error?: string; message?: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}

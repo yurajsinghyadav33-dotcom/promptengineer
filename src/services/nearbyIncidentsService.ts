@@ -29,6 +29,9 @@ export interface ProximityMatch {
 
 // Calculate Haversine distance in meters between two lat/lng coordinates
 export function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+    return Infinity;
+  }
   const R = 6371e3; // Earth radius in meters
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;
@@ -193,6 +196,14 @@ export class ProximityService {
    * @param radiusMeters matching radius threshold (default: 500m)
    */
   public static findProximityMatch(lat: number, lng: number, radiusMeters: number = 500): ProximityMatch {
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return {
+        matchType: 'none',
+        distanceMeters: Infinity,
+        allNearby: []
+      };
+    }
+    const safeRadius = Math.max(1, isNaN(radiusMeters) ? 500 : radiusMeters);
     const incidents = this.getIncidents();
 
     const scored = incidents.map(inc => {
@@ -202,7 +213,7 @@ export class ProximityService {
 
     scored.sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-    const withinRadius = scored.filter(s => s.distanceMeters <= radiusMeters);
+    const withinRadius = scored.filter(s => s.distanceMeters <= safeRadius);
 
     if (withinRadius.length > 0) {
       const closest = withinRadius[0];

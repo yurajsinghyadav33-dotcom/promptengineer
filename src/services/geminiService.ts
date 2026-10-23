@@ -1123,8 +1123,103 @@ export class GeminiActionCompiler {
         }
       ];
     }
-    // DOMAIN B: Water Leakage / Pipe Burst / Jal Bharao / Sewage / Drainage
-    else if (/\b(pani|paani|pipe|leak|leakage|drainage|nali|gutter|sewage|sewer|jal bharao|waterlogging|flood|supply)\b/i.test(textLower)) {
+    // DOMAIN B: Fire / Gas Leak / Spark / Explosion / Electrical Short Circuit
+    else if (/\b(fire|aag|gas|cylinder|lpg|spark|sparking|transformer|blast|explosion|bijli shock|short circuit|smoke|dhua|dhuan)\b/i.test(textLower)) {
+      category = 'Emergency & Safety';
+      title = 'Hazardous Fire & Combustible Hazard Containment';
+      urgencyLevel = 'Critical';
+      urgencyScore = 9.7;
+      urgencyRationale = 'Active fire, combustible gas leakage, or high-voltage electrical arcing creates immediate threat to human life, explosion risk, and rapid fire propagation.';
+      affectedPeople = 'Immediate building occupants, adjoining structures & pedestrians';
+      safetyInstruction = 'EVACUATE IMMEDIATELY. Shut off main cylinder regulator valve and electrical meter mains IF SAFE to do so. Do not operate electrical switches or open flames. Dial Fire 101 / Emergency 112.';
+      disclaimer = 'LIFE THREATENING EMERGENCY: SignalSetu compiles emergency responder packets. Call Fire 101 / Emergency 112 immediately without waiting.';
+
+      actionPlan = [
+        {
+          id: 'ap-fire-1',
+          timeframe: 'Do now',
+          action: 'Evacuate all residents from the building/flat. Establish a strict 50-meter perimeter. Do NOT switch on any light or electrical switches if gas smell is detected.',
+          responsibleEntity: 'Citizen Reporter & Building Watchman',
+          priority: 'urgent'
+        },
+        {
+          id: 'ap-fire-2',
+          timeframe: 'Do now',
+          action: 'Dial Fire Control Room 101 and Police Emergency 112 stating exact building number, floor, and nature of hazard (gas/electrical spark).',
+          responsibleEntity: 'Citizen Reporter',
+          priority: 'urgent'
+        },
+        {
+          id: 'ap-fire-3',
+          timeframe: 'Do within 1 hour',
+          action: 'Contact City Gas / Discom Emergency Quick Response Team (QRT) for immediate main line shut-off and gas detector sweep.',
+          responsibleEntity: 'Utility Emergency QRT & RWA Secretary',
+          priority: 'urgent'
+        },
+        {
+          id: 'ap-fire-4',
+          timeframe: 'Do within 24 hours',
+          action: 'Mandate fire safety officer inspection and electrical fitness audit before allowing residents to re-occupy premises.',
+          responsibleEntity: 'Fire Safety Inspector & Building Management',
+          priority: 'high'
+        }
+      ];
+
+      specificFacts.push(
+        {
+          id: 'f-fire-3',
+          fact: 'Combustible gas leakage or fire/electrical hazard reported',
+          source: 'text' as any,
+          status: 'verified' as const,
+          confidence: 96,
+          note: 'Emergency hazard keyword pattern identified'
+        },
+        {
+          id: 'f-fire-4',
+          fact: 'Building evacuation status & gas cylinder isolation',
+          source: 'user-provided' as any,
+          status: 'uncertain' as const,
+          confidence: 35,
+          note: 'Pending immediate clarification on site safety cordon'
+        }
+      );
+
+      specificLedger.push(
+        {
+          id: 'vl-fire-3',
+          claim: 'Active gas leakage or arcing electrical fire condition',
+          evidence: `Citizen report: "${rawText.slice(0, 80)}"`,
+          confidence: 95,
+          verificationRequirement: 'Emergency Fire Brigade & Gas utility inspection',
+          sourceCategory: 'user-provided'
+        },
+        {
+          id: 'vl-fire-4',
+          claim: 'Immediate residential explosion and flame spread risk',
+          evidence: 'Inferred from flammable vapor concentration in enclosed dwelling',
+          confidence: 92,
+          verificationRequirement: 'Flammable vapor meter / LEL detector reading',
+          sourceCategory: 'model-inferred'
+        }
+      );
+
+      specificQuestions = [
+        {
+          id: 'q-fire-1',
+          question: 'Are there any visible flames or thick black smoke currently rising?',
+          whyNeeded: 'Determines whether multiple water tender fire engines must be mobilized instantly.',
+          suggestedAnswers: ['Yes, visible fire and smoke', 'No flames yet, but strong gas smell', 'Sparks without active fire']
+        },
+        {
+          id: 'q-fire-2',
+          question: 'Have all residents cleared the stairwells and vacated the building?',
+          whyNeeded: 'Critical for Fire Brigade search and rescue staging upon arrival.',
+          suggestedAnswers: ['All people evacuated to open ground', 'Some elderly residents still inside', 'Evacuation currently underway']
+        }
+      ];
+    }
+    // DOMAIN C: Water Leakage / Pipe Burst / Jal Bharao / Sewage / Drainage
+    else if (/\b(pani|paani|water|drainage|nali|gutter|sewage|sewer|jal bharao|waterlogging|flood)\b|\bpipe\s+burst\b/i.test(textLower)) {
       category = 'Civic Infrastructure';
       title = 'Water Pipeline Breach & Roadway Inundation Hazard';
       urgencyLevel = 'High';
@@ -1438,7 +1533,14 @@ export class GeminiActionCompiler {
           en: `VOLUNTEER BRIEF: Reach ${loc}. Verify ground status of "${rawText.slice(0, 60)}...", assist vulnerable persons, and guide visiting departmental teams.`,
           hi: `स्वयंसेवक कार्य: ${loc} पर पहुंचकर स्थिति का जायजा लें, प्रभावित नागरिकों की सहायता करें और प्रशासनिक टीम को मार्गदर्शित करें।`,
           hinglish: `VOLUNTEER BRIEF: ${loc} par jakar check karein aur details coordinate karein.`
-        }
+        },
+        ...((urgencyLevel === 'Critical' || urgencyLevel === 'High') ? {
+          emergency: {
+            en: `EMERGENCY DISPATCH DOSSIER (Helplines: 112 / 108 / 101 / 1912):\n- Nature of Incident: ${title}\n- Exact Location / Landmark: ${loc}\n- Imminent Threat: ${affectedPeople}\n- Immediate Containment: ${safetyInstruction}\n- Priority Classification: ${urgencyLevel} (${urgencyScore}/10)`,
+            hi: `आपातकालीन प्रेषण विवरण (हेल्पलाइन: 112 / 108 / 101 / 1912):\n- घटना का स्वरूप: ${title}\n- सटीक स्थान / पहचान: ${loc}\n- संभावित जोखिम: ${affectedPeople}\n- तात्कालिक सुरक्षा उपाय: ${safetyInstruction}\n- प्राथमिकता श्रेणी: ${urgencyLevel} (${urgencyScore}/10)`,
+            hinglish: `EMERGENCY DISPATCH PACKET (Call 112 / 108 / 1912):\n- Incident: ${title}\n- Location: ${loc}\n- Threat Level: ${urgencyLevel} (${urgencyScore}/10)\n- Safety Notice: ${safetyInstruction}`
+          }
+        } : {})
       },
       verificationLedger: specificLedger,
       explainability: {

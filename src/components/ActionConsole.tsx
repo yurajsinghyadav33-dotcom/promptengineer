@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Image as ImageIcon, FileText, MapPin, Sparkles, X, UploadCloud, AlertCircle, Compass } from 'lucide-react';
-import type { InputPayload, OutputLanguage, PresetScenario } from '../types';
+import type { InputPayload, OutputLanguage, PresetScenario, SpeechRecognitionInstance, SpeechRecognitionEventLike } from '../types';
 import { PRESET_SCENARIOS } from '../services/geminiService';
 
 interface ActionConsoleProps {
@@ -27,7 +27,7 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Unmount cleanup for speech recognition
   useEffect(() => {
@@ -52,9 +52,10 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionConstructor = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
+    if (!SpeechRecognitionConstructor) {
       // Graceful fallback simulation
       setIsRecording(true);
       setErrorMsg('Web Speech API not natively supported in this browser. Simulating voice transcription...');
@@ -71,7 +72,7 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
     }
 
     try {
-      const recognition = new SpeechRecognition();
+      const recognition = new SpeechRecognitionConstructor();
       recognitionRef.current = recognition;
       recognition.continuous = false;
       recognition.interimResults = false;
@@ -83,7 +84,7 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
         setErrorMsg(null);
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEventLike) => {
         const transcript = event.results[0][0].transcript;
         onChangePayload(prev => ({
           ...prev,
@@ -92,7 +93,7 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
         }));
       };
 
-      recognition.onerror = (e: any) => {
+      recognition.onerror = (e: { error?: string; message?: string }) => {
         console.warn('Speech recognition notice:', e);
         setIsRecording(false);
         setErrorMsg('Microphone access interrupted or unsupported in iframe. Simulated speech fallback ready.');
@@ -257,6 +258,8 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
         <textarea
           className="main-textarea"
           rows={4}
+          maxLength={4000}
+          aria-label="Citizen statement or incident description"
           value={inputPayload.text}
           onChange={(e) => onChangePayload(prev => ({ ...prev, text: e.target.value }))}
           placeholder="Speak or type what happened in Hindi, Hinglish, or English... (e.g. 'Hamare area ki streetlight 3 din se band hai, raat ko bachchon ko accident ka khatra hai')"
