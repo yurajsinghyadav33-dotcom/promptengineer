@@ -264,3 +264,95 @@ test('Clarification Question Answering & Verification Ledger Engine', async (t) 
     assert.ok(updated.facts.some(f => f.fact.includes('Extra detail')));
   });
 });
+
+test('Security, Boundary Conditions & Resilience Suite', async (t) => {
+  await t.test('handles API key setting, retrieval, and clearing securely in browser session', () => {
+    GeminiActionCompiler.setApiKey('AIzaSyTestKey1234567890');
+    assert.equal(GeminiActionCompiler.getApiKey(), 'AIzaSyTestKey1234567890');
+
+    GeminiActionCompiler.setApiKey('');
+    assert.equal(GeminiActionCompiler.getApiKey(), '');
+  });
+
+  await t.test('handles XSS and script payloads safely without throwing', async () => {
+    const maliciousPayload = {
+      text: '<script>alert("xss")</script><img src=x onerror=alert(1)> Broken manhole cover on footpath',
+      location: '<b onmouseover=alert("pwn")>Connaught Place</b>',
+      images: [],
+      documents: [],
+      preferredLanguage: 'en' as const
+    };
+
+    const result = await GeminiActionCompiler.analyze(maliciousPayload);
+    assert.ok(result.id);
+    assert.ok(result.title);
+    assert.ok(result.readyOutputs.complaint.en.includes('Connaught Place'));
+    assert.ok(result.actionPlan.length > 0);
+  });
+
+  await t.test('verifies all fact and ledger confidence scores are strictly bounded within [0, 100]', async () => {
+    for (const preset of PRESET_SCENARIOS) {
+      const result = await GeminiActionCompiler.analyze({
+        text: preset.inputText,
+        location: preset.location,
+        images: [],
+        documents: [],
+        preferredLanguage: 'hinglish'
+      }, preset.id);
+
+      assert.ok(result.overallConfidence >= 0 && result.overallConfidence <= 100);
+
+      for (const fact of result.facts) {
+        assert.ok(fact.confidence >= 0 && fact.confidence <= 100, `Fact ${fact.id} confidence out of bounds: ${fact.confidence}`);
+      }
+
+      for (const item of result.verificationLedger) {
+        assert.ok(item.confidence >= 0 && item.confidence <= 100, `Ledger ${item.id} confidence out of bounds: ${item.confidence}`);
+      }
+    }
+  });
+
+  await t.test('handles extreme input lengths (> 5,000 characters) gracefully without memory overflow', async () => {
+    const longProblemText = 'Water pipeline burst leaking gallons of potable water onto the road. '.repeat(100);
+    const result = await GeminiActionCompiler.analyze({
+      text: longProblemText,
+      location: 'Civil Lines, Delhi',
+      images: [],
+      documents: [],
+      preferredLanguage: 'en'
+    });
+
+    assert.ok(result.id);
+    assert.equal(result.category, 'Civic Infrastructure');
+    assert.ok(result.summary.length <= 250, 'Summary must remain concise even with huge inputs');
+    assert.ok(result.actionPlan.length > 0);
+  });
+
+  await t.test('guarantees pure immutability of original analysis object during clarification updates', async () => {
+    const preset = PRESET_SCENARIOS[2];
+    const initial = await GeminiActionCompiler.analyze({
+      text: preset.inputText,
+      location: preset.location,
+      images: [],
+      documents: [],
+      preferredLanguage: 'hinglish'
+    }, preset.id);
+
+    const initialFactCount = initial.facts.length;
+    const initialLedgerCount = initial.verificationLedger.length;
+    const initialComplaintText = initial.readyOutputs.complaint.en;
+
+    const updated = GeminiActionCompiler.updateWithClarification(
+      initial,
+      initial.missingQuestions[0].id,
+      '50-meter safety tape cordoned off by local volunteers'
+    );
+
+    assert.notEqual(initial, updated, 'Updated analysis must be a separate object reference');
+    assert.notEqual(initial.facts, updated.facts, 'Facts array must be cloned');
+    assert.equal(initial.facts.length, initialFactCount, 'Original facts array must not be mutated in place');
+    assert.equal(initial.verificationLedger.length, initialLedgerCount, 'Original ledger must remain untouched');
+    assert.equal(initial.readyOutputs.complaint.en, initialComplaintText, 'Original complaint output must remain unmutated');
+    assert.ok(updated.facts.length > initialFactCount);
+  });
+});

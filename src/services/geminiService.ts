@@ -50,24 +50,28 @@ export const PRESET_SCENARIOS: PresetScenario[] = [
 
 export class GeminiActionCompiler {
   private static STORAGE_KEY = 'signalsetu_gemini_api_key';
+  private static inMemoryApiKey = '';
 
   public static getApiKey(): string {
+    if (this.inMemoryApiKey) return this.inMemoryApiKey;
     try {
       if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
         const stored = localStorage.getItem(this.STORAGE_KEY);
         if (stored) return stored;
       }
     } catch {
-      // Storage unavailable
+      // Storage unavailable or disabled
     }
     return (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) || '';
   }
 
   public static setApiKey(key: string): void {
+    const trimmed = key.trim();
+    this.inMemoryApiKey = trimmed;
     try {
       if (typeof localStorage !== 'undefined' && typeof localStorage.setItem === 'function') {
-        if (key.trim()) {
-          localStorage.setItem(this.STORAGE_KEY, key.trim());
+        if (trimmed) {
+          localStorage.setItem(this.STORAGE_KEY, trimmed);
         } else {
           localStorage.removeItem(this.STORAGE_KEY);
         }
@@ -979,7 +983,7 @@ export class GeminiActionCompiler {
       {
         id: 'f-1',
         fact: `Citizen reported: "${rawText.slice(0, 100)}"`,
-        source: (input.voiceTranscript ? 'voice' : 'text') as any,
+        source: input.voiceTranscript ? 'voice' : 'text',
         status: 'verified',
         confidence: 92,
         note: 'First-hand citizen submission'
@@ -1074,16 +1078,16 @@ export class GeminiActionCompiler {
         {
           id: 'f-med-3',
           fact: 'Elderly individual or fall trauma reported on site',
-          source: 'text' as any,
-          status: 'verified' as const,
+          source: 'text',
+          status: 'verified',
           confidence: 95,
           note: 'Physical injury/vulnerability keyword detected'
         },
         {
           id: 'f-med-4',
           fact: 'Current physiological vitals & consciousness status',
-          source: 'user-provided' as any,
-          status: 'uncertain' as const,
+          source: 'user-provided',
+          status: 'uncertain',
           confidence: 30,
           note: 'Requires immediate on-scene confirmation'
         }
@@ -1169,16 +1173,16 @@ export class GeminiActionCompiler {
         {
           id: 'f-fire-3',
           fact: 'Combustible gas leakage or fire/electrical hazard reported',
-          source: 'text' as any,
-          status: 'verified' as const,
+          source: 'text',
+          status: 'verified',
           confidence: 96,
           note: 'Emergency hazard keyword pattern identified'
         },
         {
           id: 'f-fire-4',
           fact: 'Building evacuation status & gas cylinder isolation',
-          source: 'user-provided' as any,
-          status: 'uncertain' as const,
+          source: 'user-provided',
+          status: 'uncertain',
           confidence: 35,
           note: 'Pending immediate clarification on site safety cordon'
         }
@@ -1264,16 +1268,16 @@ export class GeminiActionCompiler {
         {
           id: 'f-water-3',
           fact: 'Active water accumulation or pipeline rupture reported',
-          source: 'text' as any,
-          status: 'verified' as const,
+          source: 'text',
+          status: 'verified',
           confidence: 93,
           note: 'Water infrastructure issue keywords detected'
         },
         {
           id: 'f-water-4',
           fact: 'Exact pipeline feeder diameter and departmental jurisdiction',
-          source: 'document' as any,
-          status: 'uncertain' as const,
+          source: 'document',
+          status: 'uncertain',
           confidence: 40,
           note: 'Requires municipal water distribution layout map'
         }

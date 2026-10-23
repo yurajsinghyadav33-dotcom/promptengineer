@@ -57,7 +57,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <Key size={20} />
             <span>Google Gemini AI Engine Configuration</span>
           </h3>
-          <button className="modal-close-btn" onClick={onClose}>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
             <X size={20} />
           </button>
         </div>

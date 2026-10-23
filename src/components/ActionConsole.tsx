@@ -146,17 +146,33 @@ export const ActionConsole: React.FC<ActionConsoleProps> = ({
     });
   };
 
-  // Document upload handling
+  // Document upload handling with type and size validation
   const handleDocFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setErrorMsg(null);
 
+    const validExtensions = ['.pdf', '.txt', '.doc', '.docx', '.csv', '.rtf'];
+    const maxDocSizeBytes = 10 * 1024 * 1024; // 10MB limit
+
     Array.from(files).forEach(file => {
+      const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+      const isExtValid = validExtensions.includes(ext);
+      const isMimeValid = file.type && (file.type.includes('pdf') || file.type.includes('text') || file.type.includes('document') || file.type.includes('sheet'));
+
+      if (!isExtValid && !isMimeValid) {
+        setErrorMsg(`Unsupported document type: "${file.name}". Please upload PDF, TXT, or DOCX.`);
+        return;
+      }
+      if (file.size > maxDocSizeBytes) {
+        setErrorMsg(`Document "${file.name}" exceeds 10MB size limit.`);
+        return;
+      }
+
       onChangePayload(prev => ({
         ...prev,
         documents: [
           ...prev.documents,
-          { id: `doc-${Date.now()}`, name: file.name, size: file.size }
+          { id: `doc-${Date.now()}-${Math.random()}`, name: file.name, size: file.size }
         ]
       }));
     });

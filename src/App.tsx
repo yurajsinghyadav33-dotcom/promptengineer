@@ -149,8 +149,9 @@ export function App() {
           resultsEl.scrollIntoView({ behavior: 'smooth' });
         }
       }, 150);
-    } catch (err: any) {
-      showToast(`Compilation error: ${err.message || 'Check inputs'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Check inputs';
+      showToast(`Compilation error: ${message}`);
     } finally {
       setIsLoading(false);
     }
