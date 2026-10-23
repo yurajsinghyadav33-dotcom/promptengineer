@@ -91,6 +91,15 @@ npm run build
 
 Open the development URL displayed in your terminal (or your production deployment domain) in your browser.
 
+### 🧪 Automated Test & Verification Suite
+The project includes **32 automated unit tests** across 6 suites running natively via `node --test` in **~180ms**:
+- **Haversine Distance Calculator**: 0m baseline, Delhi GPS coordinates (~2.4km), NaN/invalid bounds fallback.
+- **Proximity Radar Matching**: Exact (<50m), nearby community (<500m), area match (<5km), out-of-range rejection.
+- **Community Corroboration Engine**: Incremental verification counter, non-existent ID safety, deep array immutability across reads.
+- **Competition Domain Presets**: Streetlight (311 escalation), Health/Diabetes (hypoglycemia safety), Transformer (11KV cordon & 1912 dispatch), RPwD Act statutory notices.
+- **Dynamic Novel Inputs**: Flooding pipeline, LPG gas leaks, Devanagari Hindi NLP, Hinglish classification, whitespace boundary handling.
+- **Security & Resilience Suite**: In-memory session API key fallback, XSS payload safety, [0, 100] confidence bounds, 5,000+ character stress tests, and immutable clarification updates.
+
 ---
 
 ## 🔑 Gemini AI Configuration
